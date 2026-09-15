@@ -1,0 +1,1 @@
+import {PasswordForm} from "@/components/PasswordForm";export default function Forgot(){return <main className="auth"><h1>Reset your password</h1><p className="muted">We&apos;ll email you a secure reset link.</p><PasswordForm/></main>}
