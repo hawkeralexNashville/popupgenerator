@@ -1,11 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { campaignPlacementSchema, defaultVariant, variantConfigSchema } from "@/lib/schemas";
+import { campaignPlacementSchema, defaultVariant, inlinePlacementSchema, variantConfigSchema } from "@/lib/schemas";
 
 describe("campaign placement", () => {
   it("accepts modal and inline placements only", () => {
     expect(campaignPlacementSchema.parse("MODAL")).toBe("MODAL");
     expect(campaignPlacementSchema.parse("INLINE")).toBe("INLINE");
     expect(campaignPlacementSchema.safeParse("OVERLAY").success).toBe(false);
+  });
+});
+
+describe("inline placement controls", () => {
+  it("supplies safe defaults and enforces spacing limits", () => {
+    expect(inlinePlacementSchema.parse({})).toEqual({
+      firstAfter: 4,
+      repeatEvery: 10,
+      maxInsertions: 3,
+    });
+    expect(inlinePlacementSchema.safeParse({ firstAfter: 4, repeatEvery: 2, maxInsertions: 3 }).success).toBe(false);
+    expect(inlinePlacementSchema.safeParse({ firstAfter: 4, repeatEvery: 10, maxInsertions: 11 }).success).toBe(false);
   });
 });
 

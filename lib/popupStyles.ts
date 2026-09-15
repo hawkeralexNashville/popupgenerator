@@ -11,13 +11,13 @@ export function popupStyles(config: VariantConfig) {
   const buttonMargin = config.buttonAlign === "center" ? "0 auto" : config.buttonAlign === "right" ? "0 0 0 auto" : "0 auto 0 0";
 
   return `
-    .pg-veil,.pg-veil *{box-sizing:border-box}
+    .pg-veil,.pg-veil *,.pg-inline-root,.pg-inline-root *{box-sizing:border-box}
     .pg-veil{position:absolute;width:100%;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;pointer-events:auto;background:${config.presentation === "focus" ? "rgba(15,23,42,.55)" : "rgba(15,23,42,.35)"};${config.presentation === "focus" ? "backdrop-filter:blur(4px)" : ""}}
-    .pg-veil.pg-inline{position:static;display:block;padding:0;background:none;backdrop-filter:none;pointer-events:auto}
+    .pg-inline-root{position:static;display:block;padding:0;background:none;backdrop-filter:none;pointer-events:auto}
     .pg-box{position:relative;width:min(440px,100%);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;background:${config.background};color:${config.textColor};border:1px solid ${config.borderColor};border-radius:16px;padding:${config.innerPadding}px;box-shadow:0 24px 80px #0004;text-align:${config.align};font:${config.fontSize}px/${config.lineHeight} ${config.fontFamily === "serif" ? "Georgia,serif" : "system-ui,sans-serif"};animation:pg-enter .22s ease-out}
-    .pg-inline .pg-box{width:100%;max-height:none;overflow:visible;box-shadow:0 8px 24px #0f172a1f;animation:none}
+    .pg-inline-root .pg-box{width:100%;max-height:none;overflow:visible;box-shadow:0 8px 24px #0f172a1f;animation:none}
     .pg-box.pg-wide{width:min(680px,100%)}
-    .pg-inline .pg-box.pg-wide,.pg-inline .pg-box.pg-horizontal{width:100%}
+    .pg-inline-root .pg-box.pg-wide,.pg-inline-root .pg-box.pg-horizontal{width:100%}
     .pg-box.pg-horizontal{display:grid;width:min(680px,100%);grid-template-columns:minmax(0,${config.horizontalImagePercent}fr) minmax(0,${100 - config.horizontalImagePercent}fr);gap:${config.horizontalGap}px}
     .pg-box.pg-horizontal.pg-no-image{display:block}
     .pg-content{min-width:0}
@@ -39,9 +39,9 @@ export function popupStyles(config: VariantConfig) {
     @keyframes pg-enter{from{opacity:0;transform:scale(.97)}}
     @keyframes pg-up{from{transform:translateY(30px);opacity:0}}
     @media(max-width:600px){
-      .pg-veil:not(.pg-inline){padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+      .pg-veil{padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
       .pg-box,.pg-box.pg-wide{width:100%;max-height:calc(100vh - 16px);max-height:calc(100dvh - max(16px,calc(env(safe-area-inset-top) + env(safe-area-inset-bottom))));padding:clamp(18px,5vw,24px);padding-top:clamp(48px,12vw,52px);border-radius:14px;font-size:min(${config.fontSize}px,16px)}
-      .pg-inline .pg-box,.pg-inline .pg-box.pg-wide{max-height:none;padding:clamp(18px,5vw,24px)}
+      .pg-inline-root .pg-box,.pg-inline-root .pg-box.pg-wide{max-height:none;padding:clamp(18px,5vw,24px)}
       .pg-box.pg-horizontal{display:flex;width:100%;flex-direction:column;gap:clamp(14px,4vw,18px)}
       .pg-img-frame{width:100%;max-height:min(180px,28dvh);align-self:center}
       .pg-img{height:auto;max-height:min(180px,28dvh);object-fit:cover;object-position:center}

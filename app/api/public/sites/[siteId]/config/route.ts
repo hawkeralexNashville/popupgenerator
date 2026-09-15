@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import {
   frequencySchema,
+  inlinePlacementSchema,
   targetingSchema,
   triggerSchema,
   variantConfigSchema,
@@ -24,6 +25,7 @@ export async function GET(
           id: true,
           priority: true,
           placement: true,
+          inlinePlacement: true,
           trigger: true,
           targeting: true,
           frequency: true,
@@ -44,6 +46,7 @@ export async function GET(
     const trigger = triggerSchema.safeParse(campaign.trigger);
     const targeting = targetingSchema.safeParse(campaign.targeting);
     const frequency = frequencySchema.safeParse(campaign.frequency);
+    const inlinePlacement = inlinePlacementSchema.safeParse(campaign.inlinePlacement);
     const variants = campaign.variants.flatMap((variant) => {
       const config = variantConfigSchema.safeParse(variant.config);
       return config.success
@@ -54,12 +57,14 @@ export async function GET(
     return trigger.success &&
       targeting.success &&
       frequency.success &&
+      inlinePlacement.success &&
       variants.length
       ? [
           {
             id: campaign.id,
             priority: campaign.priority,
             placement: campaign.placement,
+            inlinePlacement: inlinePlacement.data,
             trigger: trigger.data,
             targeting: targeting.data,
             frequency: frequency.data,
