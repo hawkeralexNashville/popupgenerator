@@ -9,7 +9,7 @@ async function errorMessage(response: Response, fallback: string) {
   return result?.error || fallback;
 }
 
-export function SiteActions({ siteId }: { siteId: string }) {
+export function SiteActions({ siteId, integration }: { siteId: string; integration: { publicationId: string; apiKeyStored: boolean } | null }) {
   const [campaignPending, setCampaignPending] = useState(false);
   const [campaignError, setCampaignError] = useState("");
   const [integrationPending, setIntegrationPending] = useState(false);
@@ -39,7 +39,7 @@ export function SiteActions({ siteId }: { siteId: string }) {
     try {
       const r = await fetch(`/api/sites/${siteId}/integration`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ apiKey: f.get("apiKey"), publicationId: f.get("publicationId") }) });
       if (!r.ok) setIntegrationError(await errorMessage(r, "Could not connect Beehiiv. Please try again."));
-      else setIntegrationMessage("Beehiiv connected");
+      else setIntegrationMessage("Beehiiv connected. Private API key stored securely.");
     } catch {
       setIntegrationError("Could not connect Beehiiv. Check your connection and try again.");
     } finally {
@@ -54,7 +54,7 @@ export function SiteActions({ siteId }: { siteId: string }) {
       <LoadingButton pending={campaignPending} pendingLabel="Creating campaign...">Create and design</LoadingButton>
     </form>
     <form className="card form" onSubmit={bee}>
-      <h3>Connect Beehiiv</h3><label>Publication ID<input name="publicationId" required disabled={integrationPending} /></label><label>Private API key<input type="password" name="apiKey" required disabled={integrationPending} /></label>
+      <h3>Connect Beehiiv</h3><label>Publication ID<input name="publicationId" defaultValue={integration?.publicationId ?? ""} required disabled={integrationPending} autoComplete="off" /></label><label>Private API key<input type="password" name="apiKey" required={!integration?.apiKeyStored} disabled={integrationPending} placeholder={integration?.apiKeyStored?"Stored securely — leave blank to keep current key":""} autoComplete="new-password" /></label>{integration?.apiKeyStored&&<p className="muted" role="status">API key is stored securely. It is never sent back to your browser.</p>}
       {integrationError && <p role="alert" className="error-text">{integrationError}</p>}
       {integrationMessage && <p role="status" className="success-text">{integrationMessage}</p>}
       <LoadingButton pending={integrationPending} pendingLabel="Connecting...">Verify & connect</LoadingButton>
