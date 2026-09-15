@@ -26,6 +26,8 @@ export async function POST(req: Request) {
     siteId: site.id, campaignId: parsed.data.campaignId, variantId: assignment.variantId, type: "IMPRESSION",
     idempotencyKey: parsed.data.idempotencyKey, device: parsed.data.device, path: parsed.data.path,
     referrerHost: parsed.data.referrerHost, abuseHash,
-  } }).catch(() => null);
+  } }).catch((error) => console.error("Impression event creation failed", {
+    siteId: site.id, campaignId: parsed.data.campaignId, variantId: assignment.variantId, error,
+  }));
   return new NextResponse(null, { status: 202, headers: cors });
 }
