@@ -1,6 +1,7 @@
 import type { VariantConfig } from "@/lib/schemas";
+import { popupStyles } from "@/lib/popupStyles";
 
-/** Standalone publisher widget. Deliberately no imports or runtime dependencies. */
+/** Standalone publisher widget. Bundled without external runtime dependencies. */
 (() => {
   try {
     const script = document.currentScript as HTMLScriptElement | null;
@@ -84,27 +85,29 @@ import type { VariantConfig } from "@/lib/schemas";
       const shadow = host.attachShadow({ mode: "closed" });
       host.style.cssText = inline ? "display:block;position:relative;margin:32px 0;clear:both" : "position:fixed;z-index:2147483000;inset:0;pointer-events:none";
       const style = document.createElement("style");
-      style.textContent = `*{box-sizing:border-box}.veil{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;pointer-events:auto;background:${config.presentation === "focus" ? "rgba(15,23,42,.55)" : "rgba(15,23,42,.35)"};${config.presentation === "focus" ? "backdrop-filter:blur(4px)" : ""}}.veil.inline{position:static;display:block;padding:0;background:none;backdrop-filter:none;pointer-events:auto}.box{position:relative;width:min(440px,100%);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;background:${config.background};color:${config.textColor};border:1px solid ${config.borderColor};border-radius:16px;padding:${config.innerPadding}px;box-shadow:0 24px 80px #0004;text-align:${config.align};font:${config.fontSize}px/${config.lineHeight} ${config.fontFamily === "serif" ? "Georgia,serif" : "system-ui,sans-serif"};animation:enter .22s ease-out}.inline .box{width:100%;max-height:none;overflow:visible;box-shadow:0 8px 24px #0f172a1f;animation:none}.box.wide{width:min(680px,100%)}.inline .box.wide,.inline .box.horizontal{width:100%}.box.horizontal{display:grid;width:min(680px,100%);grid-template-columns:${config.horizontalImagePercent}% minmax(0,1fr);gap:${config.horizontalGap}px}.img-frame{width:min(100%,${config.imageWidth}px);max-height:${config.imageHeight}px;aspect-ratio:${config.imageAspectRatio === "square" ? "1/1" : config.imageAspectRatio === "4:3" ? "4/3" : config.imageAspectRatio === "portrait" ? "3/4" : "auto"};align-self:${config.imageVerticalAlign === "top" ? "start" : config.imageVerticalAlign === "bottom" ? "end" : "center"};overflow:hidden;border-radius:10px}.img{display:block;width:100%;height:100%;max-height:${config.imageHeight}px;object-fit:${config.imageFit}}.img-frame.original .img{height:auto}h2{overflow-wrap:anywhere;font-size:${config.headlineSize}px;line-height:1.1;color:${config.headlineColor};margin:5px 0 10px}p{overflow-wrap:anywhere;margin:0 0 12px}.email{display:block;width:${config.inputWidth}%;padding:12px;border:1px solid ${config.borderColor};background:${config.inputBackground};border-radius:9px;font:inherit}.submit{display:block;width:${config.buttonWidth}%;margin:10px ${config.buttonAlign === "center" ? "auto" : config.buttonAlign === "right" ? "0 0 auto" : "auto 0 0"};padding:${config.buttonPadding}px 18px;border:0;border-radius:${config.buttonRadius}px;background:${config.buttonBackground};color:${config.buttonText};font-weight:${config.fontWeight};cursor:pointer}.x{position:absolute;z-index:1;right:9px;top:7px;border:0;background:none;color:${config.textColor};font-size:25px;line-height:1;cursor:pointer}.small{font-size:12px;overflow-wrap:anywhere}.error{color:#b91c1c}.slide-up{align-items:flex-end}.slide-up .box{animation:up .25s ease-out}@keyframes enter{from{opacity:0;transform:scale(.97)}}@keyframes up{from{transform:translateY(30px);opacity:0}}@media(max-width:600px){.veil:not(.inline){padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}.box,.box.wide{width:100%;max-height:calc(100dvh - 16px);padding:clamp(18px,5vw,24px);padding-top:clamp(48px,12vw,52px);border-radius:14px;font-size:min(${config.fontSize}px,16px)}.inline .box,.inline .box.wide{max-height:none;padding:clamp(18px,5vw,24px)}.box.horizontal{display:flex;width:100%;flex-direction:column;gap:clamp(14px,4vw,18px)}.img-frame{width:100%;max-height:min(180px,28dvh);align-self:center}.img{height:auto;max-height:min(180px,28dvh);object-fit:cover;object-position:center}.hide-mobile{display:none}h2{font-size:min(${config.headlineSize}px,clamp(26px,8vw,34px));margin:0 0 10px}p{margin-bottom:14px}.email,.submit{width:100%;min-height:44px;font-size:16px}.email{padding:11px 12px;margin:0 0 10px}.submit{margin:0 0 10px;padding:max(11px,${config.buttonPadding}px) 16px}.small{font-size:min(12px,3.5vw);line-height:1.4}.x{top:6px;right:6px;display:grid;place-items:center;width:40px;height:40px;padding:0}}`;
+      style.textContent = popupStyles(config);
       const veil = document.createElement("div");
-      veil.className = `veil ${inline ? "inline" : config.presentation === "slide-up" ? "slide-up" : ""}`;
+      veil.className = `pg-veil ${inline ? "pg-inline" : config.presentation === "slide-up" ? "pg-slide-up" : ""}`;
       const box = document.createElement("section");
-      box.className = `box ${config.layout}`;
+      box.className = `pg-box pg-${config.layout} ${!config.imageUrl || config.layout === "no-image" ? "pg-no-image" : ""}`;
       box.setAttribute("aria-label", config.headline);
       if (!inline) { box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); }
       const content = document.createElement("div");
+      content.className = "pg-content";
       const heading = document.createElement("h2");
       const copy = document.createElement("p");
       const form = document.createElement("form");
       const email = document.createElement("input");
       const submit = document.createElement("button");
       const small = document.createElement("div");
+      heading.className = "pg-heading"; copy.className = "pg-copy"; form.className = "pg-form";
       heading.textContent = config.headline; copy.textContent = config.body;
-      email.className = "email"; email.type = "email"; email.required = true; email.placeholder = config.emailPlaceholder;
-      submit.className = "submit"; submit.textContent = config.cta;
-      small.className = "small"; small.textContent = config.supportingText;
+      email.className = "pg-email"; email.type = "email"; email.required = true; email.placeholder = config.emailPlaceholder;
+      submit.className = "pg-submit"; submit.textContent = config.cta;
+      small.className = "pg-small"; small.textContent = config.supportingText;
       form.append(email, submit); content.append(heading, copy, form, small);
-      if (config.imageUrl && config.layout !== "no-image") { const frame = document.createElement("div"); const image = document.createElement("img"); frame.className = `img-frame ${config.imageAspectRatio === "original" ? "original" : ""} ${config.hideImageMobile ? "hide-mobile" : ""}`; image.className = "img"; image.src = config.imageUrl; image.alt = ""; frame.append(image); box.append(frame); }
-      if (!inline && config.closeButton) { const close = document.createElement("button"); close.className = "x"; close.textContent = "×"; close.setAttribute("aria-label", "Close signup"); close.onclick = dismiss; box.append(close); }
+      if (config.imageUrl && config.layout !== "no-image") { const frame = document.createElement("div"); const image = document.createElement("img"); frame.className = `pg-img-frame ${config.imageAspectRatio === "original" ? "pg-original" : ""} ${config.hideImageMobile ? "pg-hide-mobile" : ""}`; image.className = "pg-img"; image.src = config.imageUrl; image.alt = ""; frame.append(image); box.append(frame); }
+      if (!inline && config.closeButton) { const close = document.createElement("button"); close.className = "pg-close"; close.textContent = "×"; close.setAttribute("aria-label", "Close signup"); close.onclick = dismiss; box.append(close); }
       box.append(content); veil.append(box); shadow.append(style, veil);
       if (inline) point!.after(host); else document.body.append(host);
       if (!inline) email.focus({ preventScroll: true });
@@ -115,7 +118,7 @@ import type { VariantConfig } from "@/lib/schemas";
       if (!navigator.sendBeacon?.(`${base}/api/public/events`, new Blob([body], { type: "application/json" }))) fetch(`${base}/api/public/events`, { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch((error) => console.error("Popup Generator could not record impression", error));
       function dismiss() { const expires = campaign.frequency.kind === "session" ? Number.MAX_SAFE_INTEGER : Date.now() + campaign.frequency.days * 86400000; store.set(`pg:dismiss:${campaign.id}`, String(expires)); host.remove(); }
       if (!inline) veil.onclick = (event) => { if (event.target === veil) dismiss(); };
-      form.onsubmit = (event) => { event.preventDefault(); submit.disabled = true; submit.textContent = "Joining…"; fetch(`${base}/api/public/subscribe`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email.value, siteId, campaignId: campaign.id, variantId: variant.id, idempotencyKey: eventId }) }).then(async (response) => { if (!response.ok) throw new Error((await response.json()).error); store.set("pg:subscribed", String(Date.now() + campaign.frequency.subscriberDays * 86400000)); content.replaceChildren(Object.assign(document.createElement("h2"), { textContent: "You're in!" }), Object.assign(document.createElement("p"), { textContent: "Thanks for subscribing." })); if (!inline) setTimeout(() => host.remove(), 1800); }).catch((error) => { small.textContent = error.message || "Please try again."; small.className = "small error"; submit.disabled = false; submit.textContent = config.cta; }); };
+      form.onsubmit = (event) => { event.preventDefault(); submit.disabled = true; submit.textContent = "Joining…"; fetch(`${base}/api/public/subscribe`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email.value, siteId, campaignId: campaign.id, variantId: variant.id, idempotencyKey: eventId }) }).then(async (response) => { if (!response.ok) throw new Error((await response.json()).error); store.set("pg:subscribed", String(Date.now() + campaign.frequency.subscriberDays * 86400000)); content.replaceChildren(Object.assign(document.createElement("h2"), { textContent: "You're in!" }), Object.assign(document.createElement("p"), { textContent: "Thanks for subscribing." })); if (!inline) setTimeout(() => host.remove(), 1800); }).catch((error) => { small.textContent = error.message || "Please try again."; small.className = "pg-small pg-error"; submit.disabled = false; submit.textContent = config.cta; }); };
     }
   } catch (error) {
     console.error("Popup Generator widget failed unexpectedly", error);
