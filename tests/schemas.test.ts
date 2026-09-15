@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { defaultVariant, variantConfigSchema } from "@/lib/schemas";
+import { campaignPlacementSchema, defaultVariant, variantConfigSchema } from "@/lib/schemas";
+
+describe("campaign placement", () => {
+  it("accepts modal and inline placements only", () => {
+    expect(campaignPlacementSchema.parse("MODAL")).toBe("MODAL");
+    expect(campaignPlacementSchema.parse("INLINE")).toBe("INLINE");
+    expect(campaignPlacementSchema.safeParse("OVERLAY").success).toBe(false);
+  });
+});
 
 describe("horizontal popup configuration", () => {
   it("defaults to a balanced one-third image column", () => {

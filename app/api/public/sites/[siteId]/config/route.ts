@@ -23,6 +23,7 @@ export async function GET(
         select: {
           id: true,
           priority: true,
+          placement: true,
           trigger: true,
           targeting: true,
           frequency: true,
@@ -58,6 +59,7 @@ export async function GET(
           {
             id: campaign.id,
             priority: campaign.priority,
+            placement: campaign.placement,
             trigger: trigger.data,
             targeting: targeting.data,
             frequency: frequency.data,

@@ -20,6 +20,11 @@ enum EventType {
   CONVERSION
 }
 
+enum CampaignPlacement {
+  MODAL
+  INLINE
+}
+
 model Workspace {
   id        String          @id @default(cuid())
   name      String
@@ -72,6 +77,7 @@ model Campaign {
   siteId               String
   name                 String
   status               CampaignStatus @default(DRAFT)
+  placement            CampaignPlacement @default(MODAL)
   priority             Int            @default(0)
   trigger              Json
   targeting            Json
