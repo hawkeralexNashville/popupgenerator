@@ -1,2 +1,39 @@
-import Link from "next/link";import {redirect} from "next/navigation";import {db} from "@/lib/db";import {currentUser,currentWorkspace} from "@/lib/tenant";import {DashboardShell} from "@/components/DashboardShell";import {AddSite} from "@/components/AddSite";
-export default async function Dashboard(){if(!await currentUser())redirect("/login");const w=await currentWorkspace();const sites=w?await db.site.findMany({where:{workspaceId:w.id},include:{campaigns:true,events:{where:{occurredAt:{gte:new Date(Date.now()-30*86400000)}},select:{type:true}}}}):[];const events=sites.flatMap(s=>s.events),impressions=events.filter(e=>e.type==="IMPRESSION").length,signups=events.filter(e=>e.type==="CONVERSION").length;return <DashboardShell><div className="pagehead"><div><h1>Overview</h1><span className="muted">Performance over the last 30 days</span></div><AddSite/></div><section className="grid"><div className="card metric"><span className="muted">Impressions</span><strong>{impressions.toLocaleString()}</strong></div><div className="card metric"><span className="muted">Signups</span><strong>{signups.toLocaleString()}</strong></div><div className="card metric"><span className="muted">Conversion rate</span><strong>{impressions?(signups/impressions*100).toFixed(2):"0.00"}%</strong></div></section><h2 id="sites" style={{marginTop:36}}>Websites</h2><section className="grid">{sites.map(s=><Link className="card" href={`/sites/${s.id}`} key={s.id}><strong>{s.name}</strong><p className="muted">{s.domain}</p><span>{s.campaigns.length} campaign{s.campaigns.length===1?"":"s"} · {s.installStatus.replace("_"," ").toLowerCase()}</span></Link>)}{!sites.length&&<div className="card"><strong>Add your first website</strong><p className="muted">One sitewide snippet powers every campaign.</p></div>}</section></DashboardShell>}
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+import { currentUser, currentWorkspace } from "@/lib/tenant";
+import { DashboardShell } from "@/components/DashboardShell";
+import { AddSite } from "@/components/AddSite";
+
+export default async function Dashboard() {
+  if (!await currentUser()) redirect("/login");
+  const workspace = await currentWorkspace();
+  const sites = workspace ? await db.site.findMany({
+    where: { workspaceId: workspace.id },
+    include: {
+      campaigns: true,
+      events: { where: { occurredAt: { gte: new Date(Date.now() - 30 * 86400000) } }, select: { type: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  }) : [];
+  const events = sites.flatMap((site) => site.events);
+  const impressions = events.filter((event) => event.type === "IMPRESSION").length;
+  const signups = events.filter((event) => event.type === "CONVERSION").length;
+
+  return <DashboardShell>
+    <div className="pagehead">
+      <div><h1>Overview</h1><p className="page-subtitle">A snapshot of your workspace performance over the last 30 days.</p></div>
+      <AddSite />
+    </div>
+    <section className="metric-grid" aria-label="Performance summary">
+      <div className="card metric"><span className="muted">Impressions</span><strong>{impressions.toLocaleString()}</strong></div>
+      <div className="card metric"><span className="muted">Signups</span><strong>{signups.toLocaleString()}</strong></div>
+      <div className="card metric"><span className="muted">Conversion rate</span><strong>{impressions ? (signups / impressions * 100).toFixed(2) : "0.00"}%</strong></div>
+    </section>
+    <div className="section-heading"><div><h2>Websites</h2><p className="muted">Manage campaigns and installation for each site.</p></div><Link className="text-link" href="/websites">View all</Link></div>
+    {sites.length ? <section className="site-grid">{sites.slice(0, 6).map((site) => <Link className="card site-card" href={`/sites/${site.id}`} key={site.id}>
+      <div><strong>{site.name}</strong><p className="muted">{site.domain}</p></div>
+      <span>{site.campaigns.length} campaign{site.campaigns.length === 1 ? "" : "s"} · {site.installStatus.replaceAll("_", " ").toLowerCase()}</span>
+    </Link>)}</section> : <div className="card empty-state"><div className="empty-icon">↗</div><h2>Add your first website</h2><p className="muted">One sitewide snippet powers every campaign you create.</p><AddSite /></div>}
+  </DashboardShell>;
+}

@@ -2,4 +2,24 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LoadingButton } from "@/components/LoadingButton";
-export function DashboardShell({children}:{children:React.ReactNode}){return <div className="shell"><aside className="sidebar"><Link className="brand" href="/dashboard"><i>↗</i>Popup Generator</Link><nav><Link href="/dashboard">Overview</Link><Link href="/dashboard#sites">Websites</Link><Link href="/dashboard#analytics">Analytics</Link></nav><form action={async()=>{"use server";const supabase=await createSupabaseServerClient();await supabase.auth.signOut();redirect("/")}} style={{marginTop:40}}><LoadingButton className="secondary" pendingLabel="Logging out...">Log out</LoadingButton></form></aside><main className="main">{children}</main></div>}
+import { DashboardNav } from "@/components/DashboardNav";
+
+export function DashboardShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="shell">
+      <aside className="sidebar">
+        <Link className="brand" href="/dashboard"><i>↗</i>Popup Generator</Link>
+        <DashboardNav />
+        <form className="logout-form" action={async () => {
+          "use server";
+          const supabase = await createSupabaseServerClient();
+          await supabase.auth.signOut();
+          redirect("/");
+        }}>
+          <LoadingButton className="secondary" pendingLabel="Logging out...">Log out</LoadingButton>
+        </form>
+      </aside>
+      <main className="main">{children}</main>
+    </div>
+  );
+}

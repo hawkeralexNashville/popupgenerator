@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LoadingButton } from "@/components/LoadingButton";
 
@@ -8,17 +8,27 @@ export function AddSite() {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const [refreshing, startRefresh] = useTransition();
-  const [waitingForRefresh, setWaitingForRefresh] = useState(false);
-  const [refreshStarted, setRefreshStarted] = useState(false);
+  const [, startRefresh] = useTransition();
+  const nameInput = useRef<HTMLInputElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
   const router = useRouter();
 
   useEffect(() => {
-    if (refreshing && waitingForRefresh) setRefreshStarted(true);
-    if (!refreshing && waitingForRefresh && refreshStarted) {
-      setOpen(false); setPending(false); setWaitingForRefresh(false); setRefreshStarted(false);
-    }
-  }, [refreshing, waitingForRefresh, refreshStarted]);
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    const triggerElement = trigger.current;
+    document.body.style.overflow = "hidden";
+    nameInput.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+      triggerElement?.focus();
+    };
+  }, [open]);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,7 +43,8 @@ export function AddSite() {
         setPending(false);
         return;
       }
-      setWaitingForRefresh(true);
+      setOpen(false);
+      setPending(false);
       startRefresh(() => router.refresh());
     } catch {
       setError("Could not add the website. Check your connection and try again.");
@@ -42,12 +53,23 @@ export function AddSite() {
   }
 
   return <>
-    <button onClick={() => { setOpen(!open); setError(""); }}>+ Add website</button>
-    {open && <form className="card form" style={{ marginTop: 15 }} onSubmit={submit}>
-      <label>Website name<input name="name" required disabled={pending} /></label>
-      <label>Website URL<input name="url" type="url" placeholder="https://example.com" required disabled={pending} /></label>
-      {error && <p role="alert" className="error-text">{error}</p>}
-      <LoadingButton pending={pending} pendingLabel="Adding website...">Add website</LoadingButton>
-    </form>}
+    <button ref={trigger} onClick={() => { setOpen(true); setError(""); }}>+ Add website</button>
+    {open && <div className="modal-backdrop" onMouseDown={() => setOpen(false)}>
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="add-site-title" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="modal-heading">
+          <div><h2 id="add-site-title">Add a website</h2><p className="muted">Connect a site to start creating campaigns.</p></div>
+          <button type="button" className="icon-button" aria-label="Close dialog" disabled={pending} onClick={() => setOpen(false)}>×</button>
+        </div>
+        <form className="form" onSubmit={submit}>
+          <label>Website name<input ref={nameInput} name="name" autoComplete="organization" required disabled={pending} /></label>
+          <label>Website URL<input name="url" type="url" inputMode="url" placeholder="https://example.com" required disabled={pending} /></label>
+          {error && <p role="alert" className="error-text">{error}</p>}
+          <div className="modal-actions">
+            <button type="button" className="secondary" disabled={pending} onClick={() => setOpen(false)}>Cancel</button>
+            <LoadingButton pending={pending} pendingLabel="Adding website...">Add website</LoadingButton>
+          </div>
+        </form>
+      </div>
+    </div>}
   </>;
 }
