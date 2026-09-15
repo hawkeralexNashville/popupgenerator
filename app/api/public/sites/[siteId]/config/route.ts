@@ -1,4 +1,3 @@
-import type { Campaign, Variant } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import {
@@ -7,14 +6,6 @@ import {
   triggerSchema,
   variantConfigSchema,
 } from "@/lib/schemas";
-
-type PublicVariant = Pick<Variant, "id" | "name" | "config">;
-type PublicCampaign = Pick<
-  Campaign,
-  "id" | "priority" | "trigger" | "targeting" | "frequency"
-> & {
-  variants: PublicVariant[];
-};
 
 export async function GET(
   _: Request,
@@ -48,11 +39,11 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const campaigns = site.campaigns.flatMap((campaign: PublicCampaign) => {
+  const campaigns = site.campaigns.flatMap((campaign) => {
     const trigger = triggerSchema.safeParse(campaign.trigger);
     const targeting = targetingSchema.safeParse(campaign.targeting);
     const frequency = frequencySchema.safeParse(campaign.frequency);
-    const variants = campaign.variants.flatMap((variant: PublicVariant) => {
+    const variants = campaign.variants.flatMap((variant) => {
       const config = variantConfigSchema.safeParse(variant.config);
       return config.success
         ? [{ id: variant.id, name: variant.name, config: config.data }]
