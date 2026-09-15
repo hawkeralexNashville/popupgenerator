@@ -16,7 +16,9 @@ development or deployment can continue:
 4. Generate the server-only Beehiiv encryption key with
    `openssl rand -base64 32` and put it in `INTEGRATION_ENCRYPTION_KEY`.
 5. Set `NEXT_PUBLIC_APP_URL=http://localhost:3000` locally. In production, use
-   the final HTTPS application origin.
+   the final HTTPS application origin (for example,
+   `https://popupgenerator.vercel.app`). The sitewide install snippet loads
+   `/widget.js` from this application origin, never from the Supabase project URL.
 6. Run `npm install`, `npx prisma generate`, and `npm run db:migrate`. The checked-in
    migration creates the application tables, Auth workspace trigger, RLS policies,
    and `popup-images` Storage bucket.
