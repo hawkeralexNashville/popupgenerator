@@ -1,13 +1,135 @@
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql" url = env("DATABASE_URL") directUrl = env("DIRECT_URL") }
+generator client {
+  provider = "prisma-client-js"
+}
 
-enum CampaignStatus { DRAFT ACTIVE PAUSED ARCHIVED }
-enum EventType { IMPRESSION CONVERSION }
-model Workspace { id String @id @default(cuid()) name String createdAt DateTime @default(now()) members AccountMember[] sites Site[] }
-model AccountMember { id String @id @default(cuid()) userId String workspaceId String role String @default("OWNER") workspace Workspace @relation(fields:[workspaceId],references:[id],onDelete:Cascade) @@unique([userId,workspaceId]) }
-model Site { id String @id @default(cuid()) publicId String @unique @default(cuid()) workspaceId String name String url String domain String installStatus String @default("NOT_DETECTED") configVersion Int @default(1) createdAt DateTime @default(now()) updatedAt DateTime @updatedAt workspace Workspace @relation(fields:[workspaceId],references:[id],onDelete:Cascade) integration Integration? campaigns Campaign[] events Event[] }
-model Integration { id String @id @default(cuid()) siteId String @unique provider String @default("BEEHIIV") publicationId String encryptedApiKey String verifiedAt DateTime? createdAt DateTime @default(now()) updatedAt DateTime @updatedAt site Site @relation(fields:[siteId],references:[id],onDelete:Cascade) }
-model Campaign { id String @id @default(cuid()) siteId String name String status CampaignStatus @default(DRAFT) priority Int @default(0) trigger Json targeting Json frequency Json beehiivPublicationId String? publishedAt DateTime? createdAt DateTime @default(now()) updatedAt DateTime @updatedAt site Site @relation(fields:[siteId],references:[id],onDelete:Cascade) variants Variant[] events Event[] @@index([siteId,status,priority]) }
-model Variant { id String @id @default(cuid()) campaignId String name String config Json enabled Boolean @default(true) createdAt DateTime @default(now()) updatedAt DateTime @updatedAt campaign Campaign @relation(fields:[campaignId],references:[id],onDelete:Cascade) events Event[] assignments VisitorAssignment[] }
-model VisitorAssignment { id String @id @default(cuid()) visitorHash String campaignId String variantId String expiresAt DateTime createdAt DateTime @default(now()) variant Variant @relation(fields:[variantId],references:[id],onDelete:Cascade) @@unique([visitorHash,campaignId]) @@index([expiresAt]) }
-model Event { id String @id @default(cuid()) siteId String campaignId String variantId String type EventType idempotencyKey String? occurredAt DateTime @default(now()) device String? path String? referrerHost String? abuseHash String? site Site @relation(fields:[siteId],references:[id],onDelete:Cascade) campaign Campaign @relation(fields:[campaignId],references:[id],onDelete:Cascade) variant Variant @relation(fields:[variantId],references:[id],onDelete:Cascade) @@unique([type,idempotencyKey]) @@index([campaignId,occurredAt]) @@index([variantId,occurredAt]) }
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum EventType {
+  IMPRESSION
+  CONVERSION
+}
+
+model Workspace {
+  id        String          @id @default(cuid())
+  name      String
+  createdAt DateTime        @default(now())
+  members   AccountMember[]
+  sites     Site[]
+}
+
+model AccountMember {
+  id          String    @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        String    @default("OWNER")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
+model Site {
+  id            String       @id @default(cuid())
+  publicId      String       @unique @default(cuid())
+  workspaceId   String
+  name          String
+  url           String
+  domain        String
+  installStatus String       @default("NOT_DETECTED")
+  configVersion Int          @default(1)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  workspace     Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  integration   Integration?
+  campaigns     Campaign[]
+  events        Event[]
+}
+
+model Integration {
+  id              String    @id @default(cuid())
+  siteId          String    @unique
+  provider        String    @default("BEEHIIV")
+  publicationId   String
+  encryptedApiKey String
+  verifiedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  site            Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+}
+
+model Campaign {
+  id                   String         @id @default(cuid())
+  siteId               String
+  name                 String
+  status               CampaignStatus @default(DRAFT)
+  priority             Int            @default(0)
+  trigger              Json
+  targeting            Json
+  frequency            Json
+  beehiivPublicationId String?
+  publishedAt          DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  site                 Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  variants             Variant[]
+  events               Event[]
+
+  @@index([siteId, status, priority])
+}
+
+model Variant {
+  id          String              @id @default(cuid())
+  campaignId  String
+  name        String
+  config      Json
+  enabled     Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  campaign    Campaign            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  events      Event[]
+  assignments VisitorAssignment[]
+}
+
+model VisitorAssignment {
+  id          String   @id @default(cuid())
+  visitorHash String
+  campaignId  String
+  variantId   String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  variant     Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([visitorHash, campaignId])
+  @@index([expiresAt])
+}
+
+model Event {
+  id             String    @id @default(cuid())
+  siteId         String
+  campaignId     String
+  variantId      String
+  type           EventType
+  idempotencyKey String?
+  occurredAt     DateTime  @default(now())
+  device         String?
+  path           String?
+  referrerHost   String?
+  abuseHash      String?
+  site           Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  variant        Variant   @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([type, idempotencyKey])
+  @@index([campaignId, occurredAt])
+  @@index([variantId, occurredAt])
+}
