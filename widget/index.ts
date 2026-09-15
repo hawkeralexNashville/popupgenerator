@@ -1,5 +1,6 @@
 import type { VariantConfig } from "@/lib/schemas";
 import { popupStyles } from "@/lib/popupStyles";
+import { observeViewableOnce } from "@/lib/viewability";
 
 /** Standalone publisher widget. Bundled without external runtime dependencies. */
 (() => {
@@ -26,7 +27,6 @@ import { popupStyles } from "@/lib/popupStyles";
     };
     const visitor = store.get("pg:visitor") || crypto.randomUUID?.() || Math.random().toString(36).slice(2);
     store.set("pg:visitor", visitor);
-    const hash = (value: string) => { let h = 2166136261; for (const char of value) { h ^= char.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
     const glob = (pattern: string, value: string) => new RegExp("^" + pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$", "i").test(value);
     const tokens = [...document.body.classList, ...Array.from(document.querySelectorAll('[rel="category tag"],.cat-links a,.tags-links a')).map((item) => item.textContent || "")].map((item) => item.toLowerCase().replace(/^(category|tag)-/, ""));
     const article = document.querySelector("article,.single-post,[itemtype*='Article']");
@@ -40,10 +40,13 @@ import { popupStyles } from "@/lib/popupStyles";
 
     fetch(`${base}/api/public/sites/${encodeURIComponent(siteId)}/config`, { mode: "cors", credentials: "omit" })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error(`Config request failed (${response.status})`)))
-      .then((data) => {
+      .then(async (data) => {
         const campaign = (data.campaigns as Campaign[]).find(eligible);
         if (!campaign) return;
-        const variant = campaign.variants[hash(visitor + campaign.id) % campaign.variants.length];
+        const assignmentResponse = await fetch(`${base}/api/public/assign`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visitorId: visitor, siteId, campaignId: campaign.id }), mode: "cors", credentials: "omit" });
+        if (!assignmentResponse.ok) throw new Error(`Assignment request failed (${assignmentResponse.status})`);
+        const assigned = (await assignmentResponse.json()).variant as { id: string; config: VariantConfig };
+        const variant = { id: assigned.id, name: "", config: assigned.config };
         const fired = new Set<string>();
         const checks: (() => boolean)[] = [];
         if (campaign.trigger.scrollPercent !== undefined) checks.push(() => { const root = document.documentElement; return (scrollY / (root.scrollHeight - innerHeight || 1)) * 100 >= campaign.trigger.scrollPercent!; });
@@ -83,7 +86,7 @@ import { popupStyles } from "@/lib/popupStyles";
     }
 
     function recordImpression(campaign: Campaign, variant: Campaign["variants"][number], eventId: string) {
-      const payload = { siteId, campaignId: campaign.id, variantId: variant.id, type: "IMPRESSION", idempotencyKey: eventId, device: innerWidth < 768 ? "mobile" : "desktop", path: location.pathname, referrerHost: document.referrer ? new URL(document.referrer).hostname : undefined };
+      const payload = { visitorId: visitor, siteId, campaignId: campaign.id, variantId: variant.id, type: "IMPRESSION", idempotencyKey: eventId, device: innerWidth < 768 ? "mobile" : "desktop", path: location.pathname, referrerHost: document.referrer ? new URL(document.referrer).hostname : undefined };
       fetch(`${base}/api/public/events`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -127,7 +130,7 @@ import { popupStyles } from "@/lib/popupStyles";
       const eventId = `${visitor}:${campaign.id}:${crypto.randomUUID?.() || `${Date.now()}:${Math.random()}`}`;
       form.onsubmit = (event) => {
         event.preventDefault(); submit.disabled = true; submit.textContent = "Joining…";
-        fetch(`${base}/api/public/subscribe`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email.value, siteId, campaignId: campaign.id, variantId: variant.id, idempotencyKey: eventId }) })
+        fetch(`${base}/api/public/subscribe`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email.value, visitorId: visitor, siteId, campaignId: campaign.id, variantId: variant.id, idempotencyKey: eventId }) })
           .then(async (response) => { if (!response.ok) throw new Error((await response.json()).error); store.set("pg:subscribed", String(Date.now() + campaign.frequency.subscriberDays * 86400000)); document.dispatchEvent(new CustomEvent(`pg:subscribed:${campaign.id}`)); if (!inline) setTimeout(() => host.remove(), 1800); })
           .catch((error) => { small.textContent = error.message || "Please try again."; small.className = "pg-small pg-error"; submit.disabled = false; submit.textContent = config.cta; });
       };
@@ -159,7 +162,7 @@ import { popupStyles } from "@/lib/popupStyles";
           instance.host.dataset.pgInline = campaign.id;
           point.after(instance.host);
           observer.observe(instance.host);
-          recordImpression(campaign, variant, instance.eventId);
+          observeViewableOnce(instance.host, () => recordImpression(campaign, variant, instance.eventId));
         }
         document.addEventListener(`pg:subscribed:${campaign.id}`, () => { visible.clear(); dimmer.style.opacity = "0"; observer.disconnect(); setTimeout(() => dimmer.remove(), reducedMotion ? 0 : 300); }, { once: true });
         return;
