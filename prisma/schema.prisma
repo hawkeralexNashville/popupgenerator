@@ -73,20 +73,21 @@ model Integration {
 }
 
 model Campaign {
-  id                   String         @id @default(cuid())
+  id                   String            @id @default(cuid())
   siteId               String
   name                 String
-  status               CampaignStatus @default(DRAFT)
+  status               CampaignStatus    @default(DRAFT)
   placement            CampaignPlacement @default(MODAL)
-  priority             Int            @default(0)
+  inlinePlacement      Json              @default("{\"firstAfter\":4,\"repeatEvery\":10,\"maxInsertions\":3}")
+  priority             Int               @default(0)
   trigger              Json
   targeting            Json
   frequency            Json
   beehiivPublicationId String?
   publishedAt          DateTime?
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
-  site                 Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  site                 Site              @relation(fields: [siteId], references: [id], onDelete: Cascade)
   variants             Variant[]
   events               Event[]
 
