@@ -15,7 +15,20 @@ export function SiteActions({ siteId, integration }: { siteId: string; integrati
   const [integrationPending, setIntegrationPending] = useState(false);
   const [integrationMessage, setIntegrationMessage] = useState("");
   const [integrationError, setIntegrationError] = useState("");
+  const [publicationId, setPublicationId] = useState(integration?.publicationId ?? "");
+  const [savedPublicationId, setSavedPublicationId] = useState(integration?.publicationId ?? "");
+  const [apiKey, setApiKey] = useState("");
+  const [connected, setConnected] = useState(Boolean(integration?.apiKeyStored));
   const router = useRouter();
+
+  const credentialsChanged = publicationId !== savedPublicationId || apiKey.length > 0;
+  const showConnected = connected && !credentialsChanged;
+
+  function editCredentials(update: () => void) {
+    update();
+    setIntegrationMessage("");
+    setIntegrationError("");
+  }
 
   async function campaign(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -39,7 +52,14 @@ export function SiteActions({ siteId, integration }: { siteId: string; integrati
     try {
       const r = await fetch(`/api/sites/${siteId}/integration`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ apiKey: f.get("apiKey"), publicationId: f.get("publicationId") }) });
       if (!r.ok) setIntegrationError(await errorMessage(r, "Could not connect Beehiiv. Please try again."));
-      else setIntegrationMessage("Beehiiv connected. Private API key stored securely.");
+      else {
+        const result = await r.json();
+        setPublicationId(result.publicationId);
+        setSavedPublicationId(result.publicationId);
+        setApiKey("");
+        setConnected(true);
+        setIntegrationMessage("Beehiiv connected. Private API key stored securely.");
+      }
     } catch {
       setIntegrationError("Could not connect Beehiiv. Check your connection and try again.");
     } finally {
@@ -54,10 +74,10 @@ export function SiteActions({ siteId, integration }: { siteId: string; integrati
       <LoadingButton pending={campaignPending} pendingLabel="Creating campaign...">Create and design</LoadingButton>
     </form>
     <form className="card form" onSubmit={bee}>
-      <h3>Connect Beehiiv</h3><label>Publication ID<input name="publicationId" defaultValue={integration?.publicationId ?? ""} required disabled={integrationPending} autoComplete="off" /></label><label>Private API key<input type="password" name="apiKey" required={!integration?.apiKeyStored} disabled={integrationPending} placeholder={integration?.apiKeyStored?"Stored securely — leave blank to keep current key":""} autoComplete="new-password" /></label>{integration?.apiKeyStored&&<p className="muted" role="status">API key is stored securely. It is never sent back to your browser.</p>}
+      <h3>Connect Beehiiv</h3><label>Publication ID<input name="publicationId" value={publicationId} onChange={e=>editCredentials(()=>setPublicationId(e.target.value))} required disabled={integrationPending} autoComplete="off" /></label><label>Private API key<input type="password" name="apiKey" value={apiKey} onChange={e=>editCredentials(()=>setApiKey(e.target.value))} required={!connected} disabled={integrationPending} placeholder={connected?"Stored securely — leave blank to keep current key":""} autoComplete="new-password" /></label>{connected&&<p className="muted" role="status">API key is stored securely. It is never sent back to your browser.</p>}
       {integrationError && <p role="alert" className="error-text">{integrationError}</p>}
       {integrationMessage && <p role="status" className="success-text">{integrationMessage}</p>}
-      <LoadingButton pending={integrationPending} pendingLabel="Connecting...">Verify & connect</LoadingButton>
+      <LoadingButton className={showConnected?"connected-button":undefined} pending={integrationPending} pendingLabel="Connecting..." disabled={showConnected}>{showConnected?"Connected":"Verify & connect"}</LoadingButton>
     </form>
   </div>;
 }
