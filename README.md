@@ -8,7 +8,7 @@ A multi-tenant newsletter popup and conversion platform. See [the architecture](
 2. Copy the pooled and direct PostgreSQL URLs, project URL, and public anon key
    from Supabase into `.env.local`. Generate `INTEGRATION_ENCRYPTION_KEY` with
    `openssl rand -base64 32`. Never expose the database password or encryption key.
-3. Run `npm install`, `npm run db:migrate`, and `npm run dev`.
+3. Run `npm ci`, `npm run db:migrate`, and `npm run dev`.
 4. In Supabase Auth URL Configuration, set the Site URL and add
    `http://localhost:3000/auth/callback` as a development redirect URL.
 5. Put a Beehiiv publication ID and V2 API key into a site's integration form.

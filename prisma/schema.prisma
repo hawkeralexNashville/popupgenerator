@@ -25,6 +25,11 @@ enum CampaignPlacement {
   INLINE
 }
 
+enum SubscriptionAttemptStatus {
+  PROCESSING
+  SUCCEEDED
+}
+
 model Workspace {
   id        String          @id @default(cuid())
   name      String
@@ -139,4 +144,17 @@ model Event {
   @@unique([type, idempotencyKey])
   @@index([campaignId, occurredAt])
   @@index([variantId, occurredAt])
+}
+
+model SubscriptionAttempt {
+  id             String                    @id @default(cuid())
+  idempotencyKey String                    @unique
+  siteId         String
+  campaignId     String
+  variantId      String
+  status         SubscriptionAttemptStatus @default(PROCESSING)
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  @@index([createdAt])
 }
