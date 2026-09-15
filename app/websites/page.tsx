@@ -23,7 +23,6 @@ export default async function WebsitesPage() {
       {sites.map((site) => <article className="card site-card" key={site.id}>
         <div className="site-card-heading">
           <div><h2>{site.name}</h2><p className="muted">{site.domain}</p></div>
-          <span className={`status-badge ${site.installStatus === "VERIFIED" ? "status-good" : ""}`}>{site.installStatus.replaceAll("_", " ").toLowerCase()}</span>
         </div>
         <div className="site-card-footer"><span className="muted">{site._count.campaigns} campaign{site._count.campaigns === 1 ? "" : "s"}</span><Link className="button secondary" href={`/sites/${site.id}`}>Open website</Link></div>
       </article>)}

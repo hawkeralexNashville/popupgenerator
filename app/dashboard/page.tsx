@@ -33,7 +33,7 @@ export default async function Dashboard() {
     <div className="section-heading"><div><h2>Websites</h2><p className="muted">Manage campaigns and installation for each site.</p></div><Link className="text-link" href="/websites">View all</Link></div>
     {sites.length ? <section className="site-grid">{sites.slice(0, 6).map((site) => <Link className="card site-card" href={`/sites/${site.id}`} key={site.id}>
       <div><strong>{site.name}</strong><p className="muted">{site.domain}</p></div>
-      <span>{site.campaigns.length} campaign{site.campaigns.length === 1 ? "" : "s"} · {site.installStatus.replaceAll("_", " ").toLowerCase()}</span>
+      <span>{site.campaigns.length} campaign{site.campaigns.length === 1 ? "" : "s"}</span>
     </Link>)}</section> : <div className="card empty-state"><div className="empty-icon">↗</div><h2>Add your first website</h2><p className="muted">One sitewide snippet powers every campaign you create.</p><AddSite /></div>}
   </DashboardShell>;
 }
