@@ -1,0 +1,2 @@
+import {notFound} from "next/navigation";import {ownedCampaign} from "@/lib/tenant";import {DashboardShell} from "@/components/DashboardShell";import {Builder} from "@/components/Builder";
+export default async function Campaign({params}:{params:Promise<{campaignId:string}>}){const {campaignId}=await params,c=await ownedCampaign(campaignId);if(!c)notFound();return <DashboardShell><Builder campaign={JSON.parse(JSON.stringify(c))}/></DashboardShell>}
