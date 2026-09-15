@@ -84,8 +84,18 @@ import { popupStyles } from "@/lib/popupStyles";
 
     function recordImpression(campaign: Campaign, variant: Campaign["variants"][number], eventId: string) {
       const payload = { siteId, campaignId: campaign.id, variantId: variant.id, type: "IMPRESSION", idempotencyKey: eventId, device: innerWidth < 768 ? "mobile" : "desktop", path: location.pathname, referrerHost: document.referrer ? new URL(document.referrer).hostname : undefined };
-      const body = JSON.stringify(payload);
-      if (!navigator.sendBeacon?.(`${base}/api/public/events`, new Blob([body], { type: "application/json" }))) fetch(`${base}/api/public/events`, { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch((error) => console.error("Popup Generator could not record impression", error));
+      fetch(`${base}/api/public/events`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        keepalive: true,
+        mode: "cors",
+        credentials: "omit",
+      })
+        .then((response) => {
+          if (!response.ok) throw new Error(`Impression request failed (${response.status})`);
+        })
+        .catch((error) => console.error("Popup Generator could not record impression", error));
     }
 
     function buildSignup(campaign: Campaign, variant: Campaign["variants"][number], inline: boolean, onDismiss?: () => void) {
