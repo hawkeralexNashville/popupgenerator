@@ -1,6 +1,7 @@
 import type { VariantConfig } from "@/lib/schemas";
 import { popupStyles } from "@/lib/popupStyles";
 import { observeViewableOnce } from "@/lib/viewability";
+import { inlineInsertionIndexes, startCampaignDisplay } from "@/lib/widget-display";
 
 /** Standalone publisher widget. Bundled without external runtime dependencies. */
 (() => {
@@ -47,19 +48,13 @@ import { observeViewableOnce } from "@/lib/viewability";
         if (!assignmentResponse.ok) throw new Error(`Assignment request failed (${assignmentResponse.status})`);
         const assigned = (await assignmentResponse.json()).variant as { id: string; config: VariantConfig };
         const variant = { id: assigned.id, name: "", config: assigned.config };
-        const fired = new Set<string>();
-        const checks: (() => boolean)[] = [];
-        if (campaign.trigger.scrollPercent !== undefined) checks.push(() => { const root = document.documentElement; return (scrollY / (root.scrollHeight - innerHeight || 1)) * 100 >= campaign.trigger.scrollPercent!; });
-        if (campaign.trigger.seconds !== undefined) { checks.push(() => fired.has("time")); setTimeout(() => { fired.add("time"); test(); }, campaign.trigger.seconds * 1000); }
-        if (campaign.trigger.exitIntent && innerWidth > 768) { checks.push(() => fired.has("exit")); document.addEventListener("mouseout", (event) => { if (event.clientY <= 0) { fired.add("exit"); test(); } }, { once: true }); }
-        let shown = false;
-        const test = () => {
-          if (shown) return;
-          const pass = !checks.length || (campaign.trigger.logic === "ALL" ? checks.every((check) => check()) : checks.some((check) => check()));
-          if (pass) { shown = true; show(campaign, variant); }
-        };
-        addEventListener("scroll", test, { passive: true });
-        test();
+        startCampaignDisplay(campaign.placement, campaign.trigger, () => show(campaign, variant), {
+          scrollPercent: () => { const root = document.documentElement; return (scrollY / (root.scrollHeight - innerHeight || 1)) * 100; },
+          onScroll: (callback) => addEventListener("scroll", callback, { passive: true }),
+          after: (callback, milliseconds) => { setTimeout(callback, milliseconds); },
+          onExitIntent: (callback) => document.addEventListener("mouseout", (event) => { if (event.clientY <= 0) callback(); }, { once: true }),
+          isDesktop: () => innerWidth > 768,
+        });
       })
       .catch((error) => console.error("Popup Generator could not load campaign configuration", error));
 
@@ -76,10 +71,7 @@ import { observeViewableOnce } from "@/lib/viewability";
         const paragraphs = Array.from(container.children).filter((child): child is HTMLParagraphElement =>
           child.tagName === "P" && Boolean(child.textContent?.trim()) && !child.querySelector(unsafe),
         );
-        const points: HTMLParagraphElement[] = [];
-        for (let after = settings.firstAfter; after < paragraphs.length && points.length < settings.maxInsertions; after += settings.repeatEvery) {
-          points.push(paragraphs[after - 1]);
-        }
+        const points = inlineInsertionIndexes(paragraphs.length, settings).map((index) => paragraphs[index]);
         if (points.length) return points;
       }
       return [];
