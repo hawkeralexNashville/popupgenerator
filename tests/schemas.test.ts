@@ -26,6 +26,11 @@ describe("horizontal popup configuration", () => {
     expect(defaultVariant.horizontalImagePercent).toBe(33);
     expect(defaultVariant.inputWidth).toBe(100);
     expect(defaultVariant.buttonWidth).toBe(100);
+    expect(defaultVariant.inputHeight).toBe(44);
+    expect(defaultVariant.buttonHeight).toBe(42);
+    expect(defaultVariant.inputRadius).toBe(8);
+    expect(defaultVariant.inputFontSize).toBe(16);
+    expect(defaultVariant.buttonFontSize).toBe(14);
   });
 
   it("adds layout defaults to existing stored variants", () => {
@@ -33,13 +38,19 @@ describe("horizontal popup configuration", () => {
     for (const key of [
       "imageWidth", "imageHeight", "imageAspectRatio", "imageFit",
       "imageVerticalAlign", "horizontalImagePercent", "horizontalGap",
-      "innerPadding", "inputWidth", "buttonWidth",
+      "innerPadding", "inputWidth", "buttonWidth", "inputHeight", "buttonHeight",
+      "inputRadius", "inputFontSize", "buttonFontSize",
     ]) delete legacy[key];
 
     const parsed = variantConfigSchema.parse(legacy);
     expect(parsed.horizontalImagePercent).toBe(33);
     expect(parsed.imageFit).toBe("cover");
     expect(parsed.imageVerticalAlign).toBe("center");
+    expect(parsed.inputHeight).toBe(44);
+    expect(parsed.buttonHeight).toBe(42);
+    expect(parsed.inputRadius).toBe(8);
+    expect(parsed.inputFontSize).toBe(16);
+    expect(parsed.buttonFontSize).toBe(14);
   });
 
   it("accepts every horizontal column split preset", () => {

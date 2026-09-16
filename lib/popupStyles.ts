@@ -29,8 +29,8 @@ export function popupStyles(config: VariantConfig) {
     .pg-heading{overflow-wrap:anywhere;font-size:${config.headlineSize}px;line-height:1.1;color:${config.headlineColor};margin:5px 0 10px}
     .pg-copy{overflow-wrap:anywhere;margin:0 0 12px}
     .pg-form{display:flex;flex-direction:column;align-items:${config.align === "center" ? "center" : "flex-start"};gap:10px;margin:0}
-    .pg-email{display:block;width:${config.inputWidth}%;min-width:0;padding:12px;border:1px solid ${config.borderColor};background:${config.inputBackground};border-radius:9px;font:inherit}
-    .pg-submit{display:block;width:${config.buttonWidth}%;min-width:0;margin:${buttonMargin};padding:${config.buttonPadding}px 18px;border:0;border-radius:${config.buttonRadius}px;background:${config.buttonBackground};color:${config.buttonText};font-weight:${config.fontWeight};cursor:pointer}
+    .pg-email{display:block;width:${config.inputWidth}%;height:${config.inputHeight}px;min-width:0;padding:0 12px;border:1px solid ${config.borderColor};background:${config.inputBackground};border-radius:${config.inputRadius}px;font:inherit;font-size:${config.inputFontSize}px}
+    .pg-submit{display:block;width:${config.buttonWidth}%;height:${config.buttonHeight}px;min-width:0;margin:${buttonMargin};padding:0 18px;border:0;border-radius:${config.buttonRadius}px;background:${config.buttonBackground};color:${config.buttonText};font-size:${config.buttonFontSize}px;font-weight:${config.fontWeight};cursor:pointer}
     .pg-small{display:block;margin-top:10px;font-size:12px;line-height:1.4;overflow-wrap:anywhere}
     .pg-close{position:absolute;z-index:1;right:9px;top:7px;border:0;background:none;color:${config.textColor};font-size:25px;line-height:1;cursor:pointer}
     .pg-error{color:#b91c1c}
@@ -48,11 +48,14 @@ export function popupStyles(config: VariantConfig) {
       .pg-hide-mobile{display:none}
       .pg-heading{font-size:min(${config.headlineSize}px,clamp(26px,8vw,34px));margin:0 0 10px}
       .pg-copy{margin-bottom:14px}
-      .pg-email,.pg-submit{width:100%;min-height:44px;font-size:16px}
-      .pg-email{padding:11px 12px}
-      .pg-submit{margin:0;padding:max(11px,${config.buttonPadding}px) 16px}
+      .pg-email,.pg-submit{width:100%}
+      .pg-email{font-size:max(${config.inputFontSize}px,16px)}
+      .pg-submit{margin:0}
       .pg-small{margin-top:10px;font-size:min(12px,3.5vw)}
       .pg-close{top:6px;right:6px;display:grid;place-items:center;width:40px;height:40px;padding:0}
+    }
+    @media(max-width:600px) and (pointer:coarse){
+      .pg-email,.pg-submit{min-height:40px}
     }
   `;
 }
