@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-export function CopySnippet({ snippet }: { snippet: string }) {
+export function CopySnippet({ snippet, compact = false, label = "Copy" }: { snippet: string; compact?: boolean; label?: string }) {
   const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -17,13 +17,13 @@ export function CopySnippet({ snippet }: { snippet: string }) {
     }
   }
 
-  return <div className="snippet-row">
-    <code>{snippet}</code>
-    <button type="button" className="secondary copy-button" onClick={copy} aria-label="Copy sitewide install snippet">
-      {status === "copied" ? "Copied!" : status === "error" ? "Copy failed" : "Copy"}
+  return <div className={compact ? "compact-copy" : "snippet-row"}>
+    {!compact && <code>{snippet}</code>}
+    <button type="button" className="secondary copy-button" onClick={copy} aria-label={label}>
+      {status === "copied" ? "Copied!" : status === "error" ? "Copy failed" : label}
     </button>
     <span className="sr-only" role="status" aria-live="polite">
-      {status === "copied" ? "Install snippet copied to clipboard." : status === "error" ? "Clipboard access failed. Select and copy the snippet manually." : ""}
+      {status === "copied" ? "Embed code copied to clipboard." : status === "error" ? "Clipboard access failed. Open the editor to copy the snippet manually." : ""}
     </span>
   </div>;
 }
