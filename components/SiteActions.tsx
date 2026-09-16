@@ -67,8 +67,8 @@ export function SiteActions({ siteId, integration }: { siteId: string; integrati
     }
   }
 
-  return <div className="grid">
-    <form className="card form" onSubmit={campaign}>
+  return <div className="grid setup-grid">
+    <form className="card form campaign-form" onSubmit={campaign}>
       <h3>Create campaign</h3><label>Name<input name="name" placeholder="General newsletter" required disabled={campaignPending} /></label>
       {campaignError && <p role="alert" className="error-text">{campaignError}</p>}
       <LoadingButton pending={campaignPending} pendingLabel="Creating campaign...">Create and design</LoadingButton>
