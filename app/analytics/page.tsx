@@ -48,8 +48,10 @@ export default async function AnalyticsPage() {
     select: { type: true, occurredAt: true, site: { select: { id: true, name: true } }, campaign: { select: { id: true, name: true } }, variant: { select: { id: true, name: true } } },
     orderBy: { occurredAt: "asc" },
   }) : [];
-  const impressions = events.filter((event) => event.type === "IMPRESSION").length;
-  const conversions = events.filter((event) => event.type === "CONVERSION").length;
+  const embeddedEvents = workspace ? await db.embeddedFormEvent.findMany({where:{occurredAt:{gte:since},site:{workspaceId:workspace.id}},select:{type:true,occurredAt:true,site:{select:{id:true,name:true}},embeddedForm:{select:{id:true,name:true}},variant:{select:{id:true,name:true}}},orderBy:{occurredAt:"asc"}}):[];
+  const allEventTypes=[...events,...embeddedEvents];
+  const impressions = allEventTypes.filter((event) => event.type === "IMPRESSION").length;
+  const conversions = allEventTypes.filter((event) => event.type === "CONVERSION").length;
   const group = (getItem: (event: typeof events[number]) => { id: string; name: string }) => {
     const result = new Map<string, Breakdown>();
     events.forEach((event) => {
@@ -66,7 +68,7 @@ export default async function AnalyticsPage() {
     return { key, label: date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }), impressions: 0, conversions: 0 };
   });
   const daysByKey = new Map(days.map((day) => [day.key, day]));
-  events.forEach((event) => {
+  allEventTypes.forEach((event) => {
     const day = daysByKey.get(event.occurredAt.toISOString().slice(0, 10));
     if (day) {
       if (event.type === "IMPRESSION") day.impressions++;
@@ -82,6 +84,8 @@ export default async function AnalyticsPage() {
       <div className="card metric"><span className="muted">Conversion rate</span><strong>{rate({ impressions, conversions })}</strong></div>
     </section>
     <TrendChart days={days} />
-    <div className="analytics-grid"><BreakdownTable title="By website" rows={group((event) => event.site)} /><BreakdownTable title="By campaign" rows={group((event) => event.campaign)} /><BreakdownTable title="By variant" rows={group((event) => event.variant)} /></div>
+    <div className="analytics-grid"><BreakdownTable title="Campaigns by website" rows={group((event) => event.site)} /><BreakdownTable title="By in-content campaign" rows={group((event) => event.campaign)} /><BreakdownTable title="Campaign variants" rows={group((event) => event.variant)} /><BreakdownTable title="By embedded form" rows={groupEmbedded(embeddedEvents,event=>event.embeddedForm)} /><BreakdownTable title="Embedded form variants" rows={groupEmbedded(embeddedEvents,event=>event.variant)} /></div>
   </DashboardShell>;
 }
+
+function groupEmbedded<T extends {type:string}>(events:T[],getItem:(event:T)=>{id:string;name:string}){const result=new Map<string,Breakdown>();events.forEach(event=>{const item=getItem(event),row=result.get(item.id)??{name:item.name,impressions:0,conversions:0};if(event.type==="IMPRESSION")row.impressions++;else row.conversions++;result.set(item.id,row)});return [...result.values()].sort((a,b)=>b.impressions-a.impressions)}

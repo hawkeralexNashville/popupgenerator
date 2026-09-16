@@ -1,0 +1,10 @@
+import crypto from "node:crypto";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { db } from "@/lib/db";
+import { embeddedAssignmentMatches } from "@/lib/embedded-assignment";
+import { rateLimit } from "@/lib/rate-limit";
+const cors = { "Access-Control-Allow-Origin": "*" };
+const schema = z.object({ visitorId:z.string().min(8).max(200), formId:z.string(), variantId:z.string(), type:z.literal("IMPRESSION"), idempotencyKey:z.string().min(8).max(200), device:z.enum(["mobile","desktop"]).optional(), path:z.string().max(500).optional(), referrerHost:z.string().max(200).optional() });
+export async function OPTIONS(){return new NextResponse(null,{status:204,headers:{...cors,"Access-Control-Allow-Headers":"Content-Type","Access-Control-Allow-Methods":"POST, OPTIONS"}})}
+export async function POST(req:Request){const ip=req.headers.get("x-forwarded-for")?.split(",")[0]||"local";if(!rateLimit(`embedded-event:${ip}`,120))return new NextResponse(null,{status:202,headers:cors});const parsed=schema.safeParse(await req.json());if(!parsed.success)return NextResponse.json({error:"Invalid event"},{status:400,headers:cors});const assignment=await embeddedAssignmentMatches(parsed.data.formId,parsed.data.variantId,parsed.data.visitorId);if(!assignment)return NextResponse.json({error:"Invalid event"},{status:400,headers:cors});const form=await db.embeddedForm.findUnique({where:{id:assignment.embeddedFormId},select:{siteId:true}});if(!form)return NextResponse.json({error:"Invalid event"},{status:400,headers:cors});await db.embeddedFormEvent.create({data:{siteId:form.siteId,embeddedFormId:assignment.embeddedFormId,variantId:assignment.variantId,type:"IMPRESSION",idempotencyKey:parsed.data.idempotencyKey,device:parsed.data.device,path:parsed.data.path,referrerHost:parsed.data.referrerHost,abuseHash:crypto.createHash("sha256").update(`${new Date().toISOString().slice(0,10)}:${ip}`).digest("hex")}}).catch(()=>null);return new NextResponse(null,{status:202,headers:cors})}

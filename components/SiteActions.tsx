@@ -12,6 +12,8 @@ async function errorMessage(response: Response, fallback: string) {
 export function SiteActions({ siteId, integration }: { siteId: string; integration: { publicationId: string; apiKeyStored: boolean } | null }) {
   const [campaignPending, setCampaignPending] = useState(false);
   const [campaignError, setCampaignError] = useState("");
+  const [formPending, setFormPending] = useState(false);
+  const [formError, setFormError] = useState("");
   const [integrationPending, setIntegrationPending] = useState(false);
   const [integrationMessage, setIntegrationMessage] = useState("");
   const [integrationError, setIntegrationError] = useState("");
@@ -67,11 +69,24 @@ export function SiteActions({ siteId, integration }: { siteId: string; integrati
     }
   }
 
+  async function embeddedForm(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault(); if (formPending) return; setFormPending(true); setFormError("");
+    const form = new FormData(e.currentTarget);
+    try { const response = await fetch(`/api/sites/${siteId}/embedded-forms`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({name:form.get("name")}) });
+      if (!response.ok) { setFormError(await errorMessage(response,"Could not create the embedded form.")); setFormPending(false); return; }
+      router.push(`/embedded-forms/${(await response.json()).id}`);
+    } catch { setFormError("Could not create the embedded form. Check your connection and try again."); setFormPending(false); }
+  }
+
   return <div className="grid setup-grid">
     <form className="card form campaign-form" onSubmit={campaign}>
-      <h3>Create campaign</h3><label>Name<input name="name" placeholder="General newsletter" required disabled={campaignPending} /></label>
+      <h3>New in-content campaign</h3><p className="muted">Automatically place a signup inside article content.</p><label>Name<input name="name" placeholder="General newsletter" required disabled={campaignPending} /></label>
       {campaignError && <p role="alert" className="error-text">{campaignError}</p>}
       <LoadingButton pending={campaignPending} pendingLabel="Creating campaign...">Create and design</LoadingButton>
+    </form>
+    <form className="card form campaign-form" onSubmit={embeddedForm}>
+      <h3>New embedded form</h3><p className="muted">Manually place a form anywhere with one HTML snippet.</p><label>Name<input name="name" placeholder="Footer signup" required disabled={formPending}/></label>
+      {formError&&<p role="alert" className="error-text">{formError}</p>}<LoadingButton pending={formPending} pendingLabel="Creating form...">Create and design</LoadingButton>
     </form>
     <form className="card form" onSubmit={bee}>
       <h3>Connect Beehiiv</h3><label>Publication ID<input name="publicationId" value={publicationId} onChange={e=>editCredentials(()=>setPublicationId(e.target.value))} required disabled={integrationPending} autoComplete="off" /></label><label>Private API key<input type="password" name="apiKey" value={apiKey} onChange={e=>editCredentials(()=>setApiKey(e.target.value))} required={!connected} disabled={integrationPending} placeholder={connected?"Stored securely — leave blank to keep current key":""} autoComplete="new-password" /></label>{connected&&<p className="muted" role="status">API key is stored securely. It is never sent back to your browser.</p>}
