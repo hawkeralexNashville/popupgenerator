@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/DashboardShell";
 import { db } from "@/lib/db";
 import { currentUser, currentWorkspace } from "@/lib/tenant";
+import { eventTotals, thirtyDayWindowStart } from "@/lib/analytics";
 
 type Breakdown = { name: string; impressions: number; conversions: number };
 
@@ -40,9 +41,7 @@ function TrendChart({ days }: { days: { label: string; impressions: number; conv
 export default async function AnalyticsPage() {
   if (!await currentUser()) redirect("/login");
   const workspace = await currentWorkspace();
-  const since = new Date();
-  since.setUTCHours(0, 0, 0, 0);
-  since.setUTCDate(since.getUTCDate() - 29);
+  const since = thirtyDayWindowStart();
   const events = workspace ? await db.event.findMany({
     where: { occurredAt: { gte: since }, site: { workspaceId: workspace.id } },
     select: { type: true, occurredAt: true, site: { select: { id: true, name: true } }, campaign: { select: { id: true, name: true } }, variant: { select: { id: true, name: true } } },
@@ -50,8 +49,7 @@ export default async function AnalyticsPage() {
   }) : [];
   const embeddedEvents = workspace ? await db.embeddedFormEvent.findMany({where:{occurredAt:{gte:since},site:{workspaceId:workspace.id}},select:{type:true,occurredAt:true,site:{select:{id:true,name:true}},embeddedForm:{select:{id:true,name:true}},variant:{select:{id:true,name:true}}},orderBy:{occurredAt:"asc"}}):[];
   const allEventTypes=[...events,...embeddedEvents];
-  const impressions = allEventTypes.filter((event) => event.type === "IMPRESSION").length;
-  const conversions = allEventTypes.filter((event) => event.type === "CONVERSION").length;
+  const { impressions, conversions } = eventTotals(events, embeddedEvents);
   const group = (getItem: (event: typeof events[number]) => { id: string; name: string }) => {
     const result = new Map<string, Breakdown>();
     events.forEach((event) => {
