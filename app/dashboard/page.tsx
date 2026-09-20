@@ -4,21 +4,24 @@ import { db } from "@/lib/db";
 import { currentUser, currentWorkspace } from "@/lib/tenant";
 import { DashboardShell } from "@/components/DashboardShell";
 import { AddSite } from "@/components/AddSite";
+import { eventTotals, thirtyDayWindowStart } from "@/lib/analytics";
 
 export default async function Dashboard() {
   if (!await currentUser()) redirect("/login");
   const workspace = await currentWorkspace();
+  const since = thirtyDayWindowStart();
   const sites = workspace ? await db.site.findMany({
     where: { workspaceId: workspace.id },
     include: {
       campaigns: true,
-      events: { where: { occurredAt: { gte: new Date(Date.now() - 30 * 86400000) } }, select: { type: true } },
+      events: { where: { occurredAt: { gte: since } }, select: { type: true } },
+      embeddedEvents: { where: { occurredAt: { gte: since } }, select: { type: true } },
     },
     orderBy: { createdAt: "desc" },
   }) : [];
-  const events = sites.flatMap((site) => site.events);
-  const impressions = events.filter((event) => event.type === "IMPRESSION").length;
-  const signups = events.filter((event) => event.type === "CONVERSION").length;
+  const standardEvents = sites.flatMap((site) => site.events);
+  const embeddedEvents = sites.flatMap((site) => site.embeddedEvents);
+  const { impressions, conversions: signups } = eventTotals(standardEvents, embeddedEvents);
 
   return <DashboardShell>
     <div className="pagehead">
