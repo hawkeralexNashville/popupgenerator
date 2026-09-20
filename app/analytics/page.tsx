@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/DashboardShell";
 import { db } from "@/lib/db";
 import { currentUser, currentWorkspace } from "@/lib/tenant";
-import { eventTotals, thirtyDayWindowStart } from "@/lib/analytics";
+import { analyticsDays, eventTotals, resolveAnalyticsRange } from "@/lib/analytics";
+import { AnalyticsRangePicker } from "@/components/AnalyticsRangePicker";
 
 type Breakdown = { name: string; impressions: number; conversions: number };
 
@@ -23,7 +24,7 @@ function TrendChart({ days }: { days: { label: string; impressions: number; conv
   const width = 900, height = 220, pad = 18;
   const max = Math.max(1, ...days.flatMap((day) => [day.impressions, day.conversions]));
   const points = (key: "impressions" | "conversions") => days.map((day, index) => {
-    const x = pad + index * ((width - pad * 2) / (days.length - 1));
+    const x = days.length === 1 ? width / 2 : pad + index * ((width - pad * 2) / (days.length - 1));
     const y = height - pad - day[key] / max * (height - pad * 2);
     return `${x},${y}`;
   }).join(" ");
@@ -33,21 +34,24 @@ function TrendChart({ days }: { days: { label: string; impressions: number; conv
       <line x1={pad} x2={width-pad} y1={height-pad} y2={height-pad} className="chart-axis" />
       <polyline points={points("impressions")} className="chart-line chart-impressions" />
       <polyline points={points("conversions")} className="chart-line chart-conversions" />
+      {days.length === 1 && <><circle cx={width / 2} cy={height - pad - days[0].impressions / max * (height - pad * 2)} r="4" className="chart-dot chart-impressions" /><circle cx={width / 2} cy={height - pad - days[0].conversions / max * (height - pad * 2)} r="4" className="chart-dot chart-conversions" /></>}
     </svg></div>
     <div className="chart-labels"><span>{days[0].label}</span><span>{days[Math.floor(days.length / 2)].label}</span><span>{days.at(-1)?.label}</span></div>
   </section>;
 }
 
-export default async function AnalyticsPage() {
+export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<{ range?: string; from?: string; to?: string }> }) {
   if (!await currentUser()) redirect("/login");
   const workspace = await currentWorkspace();
-  const since = thirtyDayWindowStart();
+  const selectedRange = resolveAnalyticsRange(await searchParams);
+  // This single boundary object is intentionally shared by both event sources.
+  const occurredAt = { gte: selectedRange.start, lt: selectedRange.end };
   const events = workspace ? await db.event.findMany({
-    where: { occurredAt: { gte: since }, site: { workspaceId: workspace.id } },
+    where: { occurredAt, site: { workspaceId: workspace.id } },
     select: { type: true, occurredAt: true, site: { select: { id: true, name: true } }, campaign: { select: { id: true, name: true } }, variant: { select: { id: true, name: true } } },
     orderBy: { occurredAt: "asc" },
   }) : [];
-  const embeddedEvents = workspace ? await db.embeddedFormEvent.findMany({where:{occurredAt:{gte:since},site:{workspaceId:workspace.id}},select:{type:true,occurredAt:true,site:{select:{id:true,name:true}},embeddedForm:{select:{id:true,name:true}},variant:{select:{id:true,name:true}}},orderBy:{occurredAt:"asc"}}):[];
+  const embeddedEvents = workspace ? await db.embeddedFormEvent.findMany({where:{occurredAt,site:{workspaceId:workspace.id}},select:{type:true,occurredAt:true,site:{select:{id:true,name:true}},embeddedForm:{select:{id:true,name:true}},variant:{select:{id:true,name:true}}},orderBy:{occurredAt:"asc"}}):[];
   const allEventTypes=[...events,...embeddedEvents];
   const { impressions, conversions } = eventTotals(events, embeddedEvents);
   const group = (getItem: (event: typeof events[number]) => { id: string; name: string }) => {
@@ -60,8 +64,7 @@ export default async function AnalyticsPage() {
     });
     return [...result.values()].sort((a, b) => b.impressions - a.impressions);
   };
-  const days = Array.from({ length: 30 }, (_, index) => {
-    const date = new Date(since); date.setUTCDate(date.getUTCDate() + index);
+  const days = analyticsDays(selectedRange).map((date) => {
     const key = date.toISOString().slice(0, 10);
     return { key, label: date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }), impressions: 0, conversions: 0 };
   });
@@ -75,7 +78,7 @@ export default async function AnalyticsPage() {
   });
 
   return <DashboardShell>
-    <div className="pagehead"><div><h1>Analytics</h1><p className="page-subtitle">Workspace performance for the last 30 days.</p></div><span className="date-chip">Last 30 days</span></div>
+    <div className="pagehead"><div><h1>Analytics</h1><p className="page-subtitle">Workspace performance for {selectedRange.label.toLowerCase()}.</p></div><AnalyticsRangePicker range={selectedRange} /></div>
     <section className="metric-grid" aria-label="Analytics summary">
       <div className="card metric"><span className="muted">Impressions</span><strong>{impressions.toLocaleString()}</strong></div>
       <div className="card metric"><span className="muted">Conversions</span><strong>{conversions.toLocaleString()}</strong></div>
