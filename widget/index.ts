@@ -2,11 +2,15 @@ import type { VariantConfig } from "@/lib/schemas";
 import { popupStyles } from "@/lib/popupStyles";
 import { observeViewableOnce } from "@/lib/viewability";
 import { inlineInsertionIndexes, startCampaignDisplay } from "@/lib/widget-display";
+import { isPopupGeneratorFeatureDisabled } from "@/lib/page-disable";
 
 /** Standalone publisher widget. Bundled without external runtime dependencies. */
 (() => {
+  const script = document.currentScript as HTMLScriptElement | null;
+  const initialize = () => {
   try {
-    const script = document.currentScript as HTMLScriptElement | null;
+    // Check the fully parsed page before doing any campaign work, including config or assignment requests.
+    if (isPopupGeneratorFeatureDisabled(document, "in-content")) return;
     if (!script) return;
     const siteId = script.dataset.site;
     const base = new URL(script.src).origin;
@@ -171,4 +175,8 @@ import { inlineInsertionIndexes, startCampaignDisplay } from "@/lib/widget-displ
   } catch (error) {
     console.error("Popup Generator widget failed unexpectedly", error);
   }
+  };
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initialize, { once: true });
+  else initialize();
 })();
